@@ -237,10 +237,10 @@ show_status() {
 # ============================================================================
 main() {
     echo ""
-    echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  Micro Editor — Setup Fedora                           ║"
-    echo "║  Basato sull'analisi del codice sorgente               ║"
-    echo "╚══════════════════════════════════════════════════════════╝"
+    echo "============================================================"
+    echo "  Micro Editor — Setup Fedora"
+    echo "  Basato sull'analisi del codice sorgente"
+    echo "============================================================"
     echo ""
 
     install_micro

@@ -1,6 +1,6 @@
 {
     "Ctrl-r": "Redo",
-    "Alt-/": "lua:initlua.toggleComment",
+    "Alt-/": "Comment",
     "Alt-d": "DuplicateLine",
     "Ctrl-Shift-k": "DeleteLine",
     "Ctrl-Shift-Up": "MoveLinesUp",
