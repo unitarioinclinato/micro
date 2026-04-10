@@ -1,0 +1,8 @@
+{
+    "Ctrl-r": "Redo",
+    "Alt-/": "Comment",
+    "Alt-d": "DuplicateLine",
+    "Ctrl-Shift-k": "DeleteLine",
+    "Ctrl-Shift-Up": "MoveLinesUp",
+    "Ctrl-Shift-Down": "MoveLinesDown"
+}

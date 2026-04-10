@@ -1,0 +1,63 @@
+{
+    "autoindent": true,
+    "autosave": 8,
+    "clipboard": "external",
+    "colorscheme": "default",
+    "cursorline": true,
+    "diffgutter": true,
+    "encoding": "utf-8",
+    "eofnewline": true,
+    "hlsearch": true,
+    "hltrailingws": true,
+    "ignorecase": true,
+    "incsearch": true,
+    "mkparents": true,
+    "mouse": true,
+    "rmtrailingws": true,
+    "ruler": true,
+    "savecursor": true,
+    "savehistory": true,
+    "saveundo": true,
+    "scrollbar": true,
+    "scrollmargin": 5,
+    "softwrap": true,
+    "splitright": true,
+    "splitbottom": true,
+    "statusline": true,
+    "syntax": true,
+    "tabsize": 4,
+    "tabstospaces": true,
+    "truecolor": "auto",
+    "wordwrap": true,
+    "ft:go": {
+        "tabstospaces": false,
+        "tabsize": 4,
+        "rmtrailingws": true
+    },
+    "ft:python": {
+        "tabstospaces": true,
+        "tabsize": 4
+    },
+    "ft:ruby": {
+        "tabstospaces": true,
+        "tabsize": 2
+    },
+    "ft:markdown": {
+        "softwrap": true,
+        "wordwrap": true,
+        "tabstospaces": true,
+        "tabsize": 2
+    },
+    "ft:yaml": {
+        "tabstospaces": true,
+        "tabsize": 2
+    },
+    "ft:shell": {
+        "tabstospaces": true,
+        "tabsize": 4
+    },
+    "ft:json": {
+        "tabstospaces": true,
+        "tabsize": 2
+    }
+}
