@@ -1,49 +1,43 @@
-# Micro Editor — Mappa Tecnica del Codice Sorgente
+# Micro Editor — Mappa del Codice Sorgente
 
-> Documento di riferimento interno. Ogni affermazione è collegata al file e riga
-> del repository `micro-editor/micro`.
-
----
-
-## 1. Risoluzione ConfigDir (XDG)
-
-**File:** `internal/config/config.go:15-52`
-
-```
-Priorità (identica allo standard XDG):
-┌─────────────────────────┬──────────────────────────────────┐
-│ Variabile               │ Path risultante                  │
-├─────────────────────────┼──────────────────────────────────┤
-│ $MICRO_CONFIG_HOME      │ $MICRO_CONFIG_HOME               │
-│ $XDG_CONFIG_HOME (set)  │ $XDG_CONFIG_HOME/micro           │
-│ (nessuna)               │ ~/.config/micro                  │
-│ -config-dir <path>      │ <path> (override, riga 35-41)    │
-└─────────────────────────┴──────────────────────────────────┘
-```
-
-La directory viene creata con `os.MkdirAll(ConfigDir, os.ModePerm)` — riga 46.
+Riferimenti verificati sul repository
+[micro-editor/micro](https://github.com/micro-editor/micro).
 
 ---
 
-## 2. File di Configurazione
+## 1. ConfigDir — risoluzione XDG
 
-### 2.1 settings.json
+**`internal/config/config.go:15-52`** — `InitConfigDir()`
 
-**Lettura:** `internal/config/settings.go:239-262` (`ReadSettings()`)
-- Path: `filepath.Join(ConfigDir, "settings.json")` — riga 241
-- Formato: **JSON5** (supporta commenti e trailing commas) — libreria `github.com/micro-editor/json5`
-- Parsing: `json5.Unmarshal(input, &parsedSettings)` — riga 250
-- Validazione: `validateParsedSettings()` — riga 255
-- Fallback: se il file non esiste, micro usa i default interni senza errore
+```
+Priorità:
+  $MICRO_CONFIG_HOME           →  usa direttamente
+  $XDG_CONFIG_HOME             →  $XDG_CONFIG_HOME/micro
+  (nessuna)                    →  ~/.config/micro
+  flag -config-dir <path>      →  <path>  (override)
+```
 
-**Scrittura:** `WriteSettings()` — righe 353-391
-- Solo le opzioni **non-default** vengono scritte
-- Formato output: `json.MarshalIndent(parsedSettings, "", "    ")` — riga 386
-- Safe-write via `util.SafeWrite()` — riga 165
+La directory viene creata con `os.MkdirAll(ConfigDir, os.ModePerm)` (riga 46).
 
-### 2.2 Default Comuni (buffer-local + global)
+---
 
-**File:** `internal/config/settings.go:55-108`
+## 2. File di configurazione
+
+### settings.json
+
+| Operazione | Funzione | Riga |
+|-----------|----------|------|
+| Lettura | `ReadSettings()` | `settings.go:239-262` |
+| Path | `filepath.Join(ConfigDir, "settings.json")` | 241 |
+| Parsing | `json5.Unmarshal(input, &parsedSettings)` | 250 |
+| Validazione | `validateParsedSettings()` | 255 |
+| Scrittura | `WriteSettings()` | 353-391 |
+| Formato output | `json.MarshalIndent(…, "", "    ")` | 386 |
+
+Il formato è **JSON5** (commenti, trailing commas). Se il file manca, micro
+usa i default interni senza errore.
+
+### Default comuni (`settings.go:55-108`)
 
 | Opzione | Default | Tipo |
 |---------|---------|------|
@@ -52,302 +46,169 @@ La directory viene creata con `os.MkdirAll(ConfigDir, os.ModePerm)` — riga 46.
 | `cursorline` | `true` | bool |
 | `diffgutter` | `false` | bool |
 | `encoding` | `"utf-8"` | string |
-| `fileformat` | `"unix"` (Linux) | string |
+| `eofnewline` | `true` | bool |
+| `fileformat` | `"unix"` | string |
 | `hlsearch` | `false` | bool |
+| `hltrailingws` | `false` | bool |
 | `ignorecase` | `true` | bool |
+| `incsearch` | `true` | bool |
 | `matchbrace` | `true` | bool |
+| `mkparents` | `false` | bool |
+| `rmtrailingws` | `false` | bool |
 | `ruler` | `true` | bool |
 | `savecursor` | `false` | bool |
 | `saveundo` | `false` | bool |
+| `scrollbar` | `false` | bool |
 | `scrollmargin` | `3` | float64 |
-| `scrollspeed` | `2` | float64 |
 | `softwrap` | `false` | bool |
+| `splitbottom` | `true` | bool |
+| `splitright` | `true` | bool |
 | `syntax` | `true` | bool |
 | `tabsize` | `4` | float64 |
 | `tabstospaces` | `false` | bool |
+| `truecolor` | `"auto"` | string |
+| `wordwrap` | `false` | bool |
 
-### 2.3 Default Global-Only
-
-**File:** `internal/config/settings.go:112-135`
+### Default globali (`settings.go:112-135`)
 
 | Opzione | Default | Note |
 |---------|---------|------|
-| `autosave` | `0` | secondi, 0=off |
-| `clipboard` | `"external"` | valori: internal, external, terminal |
-| `colorscheme` | `"default"` | — |
-| `mouse` | `true` | — |
-| `pluginchannels` | `["https://raw.githubusercontent.com/micro-editor/plugin-channel/master/channel.json"]` | riga 127 |
+| `autosave` | `0` | secondi; 0 = off |
+| `clipboard` | `"external"` | `internal`, `external`, `terminal` |
+| `colorscheme` | `"default"` | |
+| `mouse` | `true` | |
+| `pluginchannels` | `["https://…/channel.json"]` | riga 127 |
 | `pluginrepos` | `[]` | repo aggiuntivi |
-| `savehistory` | `true` | — |
-| `sucmd` | `"sudo"` | — |
+| `savehistory` | `true` | |
+| `sucmd` | `"sudo"` | |
 
-### 2.4 Override per filetype / glob
+### Override filetype / glob
 
-**Filetype** (`ft:`): `settings.go:338-350` — `UpdateFileTypeLocals()`
-**Glob** (`glob:` o senza prefisso): `settings.go:321-333` — `UpdatePathGlobLocals()`
+- **`ft:`** → `settings.go:338-350` — `UpdateFileTypeLocals()`
+- **`glob:`** → `settings.go:321-333` — `UpdatePathGlobLocals()`
 
-Esempio in settings.json:
-```json
-{
-    "ft:go": { "tabstospaces": false },
-    "glob:*.yml": { "tabsize": 2 }
-}
-```
+### bindings.json
 
-### 2.5 bindings.json
+Letto da `action.InitBindings()` — `cmd/micro/micro.go:406`.
+Path: `ConfigDir/bindings.json`.
 
-Letto da `action.InitBindings()` — chiamato in `cmd/micro/micro.go:406`
-Path: `ConfigDir/bindings.json`
+Le azioni plugin vanno referenziate con prefisso `lua:`, ad esempio
+`"lua:comment.comment"` per il commento (vedi `bufpane.go:123-135`).
 
-### 2.6 init.lua
+### init.lua
 
-**File:** `internal/config/rtfiles.go:182-192`
-
-```go
-initlua := filepath.Join(ConfigDir, "init.lua")
-if _, err := os.Stat(initlua); !os.IsNotExist(err) {
-    p := new(Plugin)
-    p.Name = "initlua"
-    // ...
-}
-```
-
-Il file `init.lua` viene trattato come un plugin con nome fisso `"initlua"`.
-Non può essere rimosso con `plugin remove` — ref `plugin_installer.go:671-673`.
+**`rtfiles.go:182-192`** — trattato come plugin con nome fisso `"initlua"`.
+Non può essere rimosso con `plugin remove` (`plugin_installer.go:671-673`).
 
 ---
 
-## 3. Sistema Plugin
+## 3. Sistema plugin
 
-### 3.1 Struttura su disco
-
-**Ricerca plugin utente:** `internal/config/rtfiles.go:194-229`
+### Struttura su disco (`rtfiles.go:194-229`)
 
 ```
 ~/.config/micro/plug/
-└── <plugin-name>/           ← d.Name() (riga 200)
-    ├── *.lua                ← sorgenti Lua (riga 208)
-    ├── repo.json            ← metadati PluginInfo (riga 210-219)
-    └── help/                ← file help opzionali
-        └── *.md
+└── <nome>/
+    ├── *.lua          sorgenti Lua
+    ├── repo.json      metadati (Name, Description, Website)
+    └── help/*.md      help opzionali
 ```
 
-**Plugin built-in:** `internal/config/rtfiles.go:231-269`
-- Embedded nel binario via `runtime/plugins/`
-- Possono essere sovrascritti dall'utente (riga 235-239)
+### Plugin built-in (`rtfiles.go:231-269`)
 
-**Plugin built-in disponibili:** (`runtime/plugins/`)
-- `autoclose` — auto-chiusura brackets
-- `comment` — commenta/decommenta
-- `diff` — integrazione git diffgutter
-- `ftoptions` — override filetype-specific
+Embedded nel binario da `runtime/plugins/`. Possono essere sovrascritti
+dall'utente (riga 235-239).
+
+- `autoclose` — chiusura brackets
+- `comment` — commenta/decommenta (`comment.lua:218`: `lua:comment.comment`)
+- `diff` — git diffgutter
+- `ftoptions` — override filetype
 - `linter` — linting estensibile
-- `literate` — syntax highlighting Literate
+- `literate` — syntax literate
 - `status` — estensioni statusline
 
-### 3.2 repo.json (metadati plugin locale)
+### Canale remoto (`plugin_installer.go:124-170`)
 
-**File:** `internal/config/plugin_manager.go:26-46`
+1. `PluginChannel` (JSON) contiene URL di repository
+2. Ogni repository contiene array di `PluginPackage`
+3. Formato repository: JSON5
 
-```go
-type PluginInfo struct {
-    Name string `json:"Name"`
-    Desc string `json:"Description"`
-    Site string `json:"Website"`
-}
-```
+**PluginPackage** (`plugin_installer.go:39-46`):
+Name, Description, Author, Tags, Versions, Builtin.
 
-Formato: JSON standard (`encoding/json`).
+**PluginVersion** (`plugin_installer.go:52-57`):
+Version (semver), Url (zip), Require (dipendenze).
 
-### 3.3 Plugin Channel (catalogo remoto)
+### Risoluzione dipendenze (`plugin_installer.go:515-542`)
 
-**Canale default:** `internal/config/settings.go:127`
-```
-https://raw.githubusercontent.com/micro-editor/plugin-channel/master/channel.json
-```
-
-**Flusso di risoluzione:** `internal/config/plugin_installer.go:124-170`
-1. Il canale (`PluginChannel`) è un JSON che contiene URL di repository
-2. Ogni `PluginRepository` contiene un array di `PluginPackage`
-3. Formato repository: **JSON5** (riga 138, 158)
-
-**Struttura PluginPackage:** `plugin_installer.go:39-46`
-```go
-type PluginPackage struct {
-    Name        string
-    Description string
-    Author      string
-    Tags        []string
-    Versions    PluginVersions    // ogni versione ha Version, Url, Require
-    Builtin     bool
-}
-```
-
-**Struttura PluginVersion:** `plugin_installer.go:52-57`
-```go
-type PluginVersion struct {
-    pack    *PluginPackage
-    Version semver.Version       // semver: github.com/blang/semver
-    Url     string               // URL dello zip da scaricare
-    Require PluginDependencies   // dipendenze (incluso "micro" core)
-}
-```
-
-### 3.4 Risoluzione Dipendenze
-
-**Algoritmo:** `plugin_installer.go:515-542` — `Resolve()`
-
-Risoluzione ricorsiva con backtracking:
+Ricorsiva con backtracking:
 1. Prende la prima dipendenza aperta
 2. Se già selezionata e nel range → prosegue
-3. Se già selezionata ma fuori range → **errore**
-4. Altrimenti: ordina le versioni disponibili (dalla più recente), prova ciascuna
+3. Se fuori range → errore
+4. Altrimenti prova dalla versione più recente
 
-**Messaggi di errore esatti:**
-- Riga 525: `unable to find a matching version for "<nome>"` — versione selezionata fuori range
-- Riga 539: `unable to find a matching version for "<nome>"` — nessuna versione disponibile soddisfa il range
-- Riga 651: `Unknown plugin "<nome>"` — plugin non trovato nel canale
+Messaggi di errore:
+- riga 525/539: `unable to find a matching version for "<nome>"`
+- riga 651: `Unknown plugin "<nome>"`
 
-### 3.5 Installazione Plugin
+### Installazione (`plugin_installer.go:396-471`)
 
-**Download:** `plugin_installer.go:396-471` — `DownloadAndInstall()`
-- Scarica lo zip da `pv.Url`
-- Estrae in `ConfigDir/plug/<nome>` (riga 412)
-- Gestisce sia zip con directory root che senza (righe 421-434)
+Scarica zip da `pv.Url`, estrae in `ConfigDir/plug/<nome>` (riga 412).
 
-### 3.6 Comandi Plugin Manager
+### Comandi (`plugin_installer.go:644-725`)
 
-**File:** `plugin_installer.go:644-725` — `PluginCommand()`
-
-| Comando | Azione | Note |
-|---------|--------|------|
-| `install` | Risolve dipendenze e scarica | Riga 646-665 |
-| `remove` | Elimina `ConfigDir/plug/<dir>` | Riga 668-693 |
-| `update` | Risolve versioni >= corrente | Riga 694-695, `UpdatePlugins()` 608-642 |
-| `list` | Mostra plugin caricati | Riga 696-707 |
-| `search` | Cerca per nome/descrizione/tag | Riga 708-715 |
-| `available` | Lista tutti i package del canale | Riga 716-721 |
-
-### 3.7 CLI flags
-
-**File:** `cmd/micro/micro.go:39-40`
-```go
-flagPlugin = flag.String("plugin", "", "Plugin command")
-flagClean  = flag.Bool("clean", false, "Clean configuration directory")
-```
-
-Esecuzione: `DoPluginFlags()` — micro.go:131-145
-```go
-config.PluginCommand(os.Stdout, *flagPlugin, args)
-```
+| Comando | Note |
+|---------|------|
+| `install` | risolve dipendenze, scarica |
+| `remove` | elimina directory in plug/ |
+| `update` | risolve versioni ≥ corrente |
+| `list` | mostra plugin caricati |
+| `search` | cerca per nome/descrizione/tag |
+| `available` | elenca tutti i package |
 
 ---
 
-## 4. Runtime Files
-
-**File:** `internal/config/rtfiles.go:161-178`
+## 4. Runtime files (`rtfiles.go:160-178`)
 
 ```go
-func InitRuntimeFiles(user bool) {
-    add(RTColorscheme, "colorschemes", "*.micro")   // riga 174
-    add(RTSyntax, "syntax", "*.yaml")                // riga 175
-    add(RTSyntaxHeader, "syntax", "*.hdr")           // riga 176
-    add(RTHelp, "help", "*.md")                      // riga 177
-}
+add(RTColorscheme, "colorschemes", "*.micro")
+add(RTSyntax,      "syntax",       "*.yaml")
+add(RTSyntaxHeader,"syntax",       "*.hdr")
+add(RTHelp,        "help",         "*.md")
 ```
 
-Per ogni tipo, prima cerca in `ConfigDir/<tipo>/`, poi nel binario embedded.
-I file utente **sovrascrivono** quelli embedded con lo stesso nome (riga 129-136).
+Per ogni tipo cerca prima in `ConfigDir/<tipo>/`, poi negli asset embedded.
+I file utente sovrascrivono quelli embedded con lo stesso nome.
 
 ---
 
-## 5. Spellcheck — Stato nel Repository
-
-**Risultato ricerca:** `grep -rn "spell\|aspell\|hunspell"` su tutto il repo:
-- **Unica menzione:** `runtime/plugins/linter/help/linter.md:74,80`
-- Tool suggerito: **`misspell`** (tool Go, non aspell/hunspell)
-- È un **esempio** nell'help del linter, non un plugin dedicato
-
-```lua
--- Dal linter.md:80
-linter.makeLinter("misspell", "", "misspell", {"%f"}, "%f:%l:%c: %m", {}, false, true)
-```
-
-**NON esiste** nel repo:
-- Plugin "aspell" nel canale ufficiale
-- Integrazione nativa con aspell/hunspell
-- Nessun comando `spell` o `spellcheck`
-
-L'errore `unable to find a matching version for "aspell"` è prodotto da:
-- `plugin_installer.go:651`: `Unknown plugin "aspell"` — se il plugin non è nel canale
-- `plugin_installer.go:525/539`: se c'è ma le dipendenze non matchano
-
----
-
-## 6. Build da Sorgente
-
-**File:** `Makefile:24-31`
-
-```bash
-# Build completa (con generazione assets)
-make build
-
-# Build veloce (senza rigenerare assets)
-make build-quick
-
-# Build con debug
-make build-dbg
-
-# Installa in $GOPATH/bin
-make install
-
-# Test
-make test    # → go test ./internal/... && go test ./cmd/...
-```
-
-**Variabili iniettate nel binario:**
-- `Version` — dal tag git
-- `CommitHash` — sha corto
-- `CompileDate` — data compilazione
-
-**IMPORTANTE** (README.md:179): `go get` diretto è sconsigliato perché non imposta
-queste variabili, rompendo il plugin manager (che usa `util.Version` per risolvere
-la dipendenza "micro" — ref `plugin_installer.go:366`).
-
----
-
-## 7. Sequenza di Boot
-
-**File:** `cmd/micro/micro.go:293-484` — `main()`
+## 5. Sequenza di boot (`cmd/micro/micro.go:293-484`)
 
 ```
-1. InitFlags()                          ← riga 303
-2. InitLog()                            ← riga 316
-3. config.InitConfigDir()               ← riga 318 (crea ConfigDir)
-4. config.InitRuntimeFiles(true)        ← riga 323 (carica colorschemes, syntax, help)
-5. config.InitPlugins()                 ← riga 324 (scopre plugin su disco)
-6. config.ReadSettings()                ← riga 332 (legge settings.json)
-7. config.InitGlobalSettings()          ← riga 336 (merge default + user settings)
-8. DoPluginFlags()                      ← riga 358 (se -plugin/-clean → esegui e esci)
-9. screen.Init()                        ← riga 360 (inizializza terminale)
-10. config.LoadAllPlugins()              ← riga 395 (esegue codice Lua plugin)
-11. action.InitBindings()                ← riga 406 (carica bindings.json)
-12. config.RunPluginFn("preinit")        ← riga 411
-13. LoadInput(args)                      ← riga 419 (apre file/buffer)
-14. config.RunPluginFn("init")           ← riga 429
-15. config.RunPluginFn("postinit")       ← riga 434
-16. config.InitColorscheme()             ← riga 439
-17. Event loop                           ← riga 481-483
+ 1. InitFlags()                       303
+ 2. InitLog()                         316
+ 3. config.InitConfigDir()            318   crea ConfigDir
+ 4. config.InitRuntimeFiles(true)     323   colorschemes, syntax, help
+ 5. config.InitPlugins()              324   scopre plugin su disco
+ 6. config.ReadSettings()             332   legge settings.json
+ 7. config.InitGlobalSettings()       336   merge default + user
+ 8. DoPluginFlags()                   358   -plugin/-clean → esegui ed esci
+ 9. screen.Init()                     360   inizializza terminale
+10. config.LoadAllPlugins()           395   esegue codice Lua
+11. action.InitBindings()             406   carica bindings.json
+12. config.RunPluginFn("preinit")     411
+13. LoadInput(args)                   419   apre file/buffer
+14. config.RunPluginFn("init")        429
+15. config.RunPluginFn("postinit")    434
+16. config.InitColorscheme()          439
+17. Event loop                        481
 ```
 
 ---
 
-## 8. Comando -clean
+## 6. Comando -clean (`cmd/micro/clean.go:33-163`)
 
-**File:** `cmd/micro/clean.go:33-163`
-
-Azioni:
-1. Riscrive `settings.json` rimuovendo opzioni default (riga 44-52)
-2. Rileva opzioni orfane (non più usate da plugin) (riga 55-69)
-3. Pulisce file corrotti in `buffers/` (riga 101-146)
-4. Migra vecchia directory `plugins/` → `plug/` (riga 148-160)
+1. Riscrive `settings.json` rimuovendo opzioni al default (44-52)
+2. Rileva opzioni orfane non più usate da plugin (55-69)
+3. Pulisce file corrotti in `buffers/` (101-146)
+4. Migra `plugins/` → `plug/` (148-160)
